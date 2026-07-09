@@ -3,6 +3,12 @@
 import time
 import cv2
 from vision.face_mesh import FaceMeshDetector
+from scoring.eye_aspect_ratio import (
+    eye_aspect_ratio,
+    extract_eye_points,
+    LEFT_EYE,
+    RIGHT_EYE,
+)
 
 class WebcamCapture:
     """Wraps an OpenCV webcam stream with a live FPS counter."""
@@ -34,6 +40,27 @@ class WebcamCapture:
             timestamp_ms = int((time.time() - start_time) * 1000)
             result = detector.process(frame, timestamp_ms)
             frame = detector.draw(frame, result)
+
+            # Compute EAR if a face is present
+            ear_text = "EAR: --"
+            if result.face_landmarks:
+                landmarks = result.face_landmarks[0]
+                h, w = frame.shape[:2]
+                left_pts = extract_eye_points(landmarks, LEFT_EYE, w, h)
+                right_pts = extract_eye_points(landmarks, RIGHT_EYE, w, h)
+                ear = (eye_aspect_ratio(left_pts) + eye_aspect_ratio(right_pts)) / 2.0
+                state = "CLOSED" if ear < 0.20 else "open"
+                ear_text = f"EAR: {ear:.3f} ({state})"
+
+            cv2.putText(
+                frame,
+                ear_text,
+                (10, 70),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1.0,
+                (0, 255, 255),
+                2,
+            )
 
             now = time.time()
             fps = 1.0 / (now - prev_time) if now != prev_time else 0.0
