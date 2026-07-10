@@ -3,8 +3,7 @@ import math
 
 import numpy as np
 
-from scoring.head_pose import rotation_matrix_to_angles
-
+from scoring.pose_math import rotation_matrix_to_angles
 
 def test_identity_matrix_is_zero_angles():
     """No rotation (identity matrix) should give ~0 for all angles."""
